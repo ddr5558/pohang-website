@@ -1,0 +1,13 @@
+# 포항 글로벌 기업혁신파크 robots.txt
+# 검색 로봇 접근 안내 파일
+
+User-agent: *
+Allow: /
+
+# 관리자 영역은 검색에 노출하지 않습니다 (향후 경로 구현 시 적용)
+Disallow: /admin
+Disallow: /login
+
+# Sitemap 위치
+# 도메인(pohangglobalpark.kr) 연결이 최종 확정되면 주소를 다시 한번 확인하세요.
+Sitemap: https://pohangglobalpark.kr/sitemap.xml

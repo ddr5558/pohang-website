@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>공지사항 | 포항 글로벌 기업혁신파크</title>
+  <meta name="description" content="포항 글로벌 기업혁신파크 공지사항 상세 내용입니다." />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="site-header solid">
+    <div class="container header-top">
+      <span class="util-left">국토교통부 선도사업</span>
+      <span class="util-right">
+        <a href="#">KOR</a>
+        <a href="#">ENG</a>
+      </span>
+    </div>
+    <div class="container nav-wrap">
+      <a class="brand" href="index.html">포항 글로벌 기업혁신파크</a>
+      <nav class="gnb">
+        <ul class="gnb-list">
+          <li><a href="about.html">혁신파크 소개</a></li>
+          <li><a href="notice.html">공지사항</a></li>
+          <li><a href="contact.html">입주 문의</a></li>
+        </ul>
+      </nav>
+      <button type="button" class="nav-toggle" id="nav-toggle" aria-label="메뉴" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </header>
+
+  <section class="page-hero">
+    <div class="container">
+      <p class="breadcrumb"><a href="index.html">홈</a> › <a href="notice.html">공지사항</a> › 상세</p>
+      <h1>공지사항</h1>
+    </div>
+  </section>
+
+  <section class="notice-detail">
+    <div class="container" id="detail">
+      <p class="muted">불러오는 중입니다…</p>
+    </div>
+  </section>
+
+  <footer class="site-footer">
+    <div class="container">
+      <p>© 2026 포항 글로벌 기업혁신파크. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-config.js"></script>
+  <script>
+    async function loadDetail() {
+      const box = document.getElementById("detail");
+      const id = new URLSearchParams(location.search).get("id");
+      if (!id) {
+        box.innerHTML = '<p class="muted">잘못된 접근입니다. <a href="notice.html">목록으로 돌아가기</a></p>';
+        return;
+      }
+      const { data, error } = await supa
+        .from("notices")
+        .select("*")
+        .eq("id", id)
+        .single();
+
+      if (error || !data) {
+        box.innerHTML = '<p class="muted">글을 찾을 수 없습니다. <a href="notice.html">목록으로 돌아가기</a></p>';
+        return;
+      }
+      document.title = data.title + " | 포항 글로벌 기업혁신파크";
+      const body = data.body
+        ? escapeHtml(data.body).replace(/\n/g, "<br>")
+        : '<span class="muted">본문이 없습니다.</span>';
+      box.innerHTML =
+        '<div class="notice-head">' +
+          "<h2>" + escapeHtml(data.title) + "</h2>" +
+          '<div class="notice-meta"><span class="tag">' + escapeHtml(data.category) +
+          "</span><time>" + fmtDate(data.created_at) + "</time></div>" +
+        "</div>" +
+        '<div class="notice-body"><p>' + body + "</p></div>" +
+        '<div class="notice-actions"><a href="notice.html" class="btn btn-ghost">← 목록으로</a></div>';
+    }
+    loadDetail();
+  </script>
+  <script src="menu.js"></script>
+</body>
+</html>

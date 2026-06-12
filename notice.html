@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>공지사항 | 포항 글로벌 기업혁신파크</title>
+  <meta name="description" content="포항 글로벌 기업혁신파크의 공지사항, 보도자료, 사업 추진 소식을 확인하세요." />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- ===== 서브페이지 헤더 (단색) ===== -->
+  <header class="site-header solid">
+    <div class="container header-top">
+      <span class="util-left">국토교통부 선도사업</span>
+      <span class="util-right">
+        <a href="#">KOR</a>
+        <a href="#">ENG</a>
+      </span>
+    </div>
+    <div class="container nav-wrap">
+      <a class="brand" href="index.html">포항 글로벌 기업혁신파크</a>
+      <nav class="gnb">
+        <ul class="gnb-list">
+          <li><a href="about.html">혁신파크 소개</a></li>
+          <li><a href="notice.html">공지사항</a></li>
+          <li><a href="contact.html">입주 문의</a></li>
+        </ul>
+      </nav>
+      <button type="button" class="nav-toggle" id="nav-toggle" aria-label="메뉴" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ===== 상단 배너 ===== -->
+  <section class="page-hero">
+    <div class="container">
+      <p class="breadcrumb"><a href="index.html">홈</a> › 홍보센터 › 공지사항</p>
+      <h1>공지사항</h1>
+    </div>
+  </section>
+
+  <!-- ===== 공지 목록 ===== -->
+  <section class="section">
+    <div class="container">
+      <div class="board-toolbar">
+        <span class="count">불러오는 중…</span>
+        <span class="muted">※ 게시글 등록·수정·삭제는 관리자만 가능합니다. 방문자는 열람만 가능합니다.</span>
+      </div>
+      <ul class="board-list" id="board-list">
+        <li class="muted">공지사항을 불러오는 중입니다…</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ===== 푸터 ===== -->
+  <footer class="site-footer">
+    <div class="container">
+      <p>© 2026 포항 글로벌 기업혁신파크. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <!-- ===== 공지 목록 불러오기 ===== -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-config.js"></script>
+  <script>
+    async function loadNotices() {
+      const ul = document.getElementById("board-list");
+      const { data, error } = await supa
+        .from("notices")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        ul.innerHTML = '<li class="muted">목록을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.</li>';
+        return;
+      }
+      document.querySelector(".count").textContent = "전체 " + data.length + "건";
+      if (!data.length) {
+        ul.innerHTML = '<li class="muted">등록된 공지가 없습니다.</li>';
+        return;
+      }
+      ul.innerHTML = data
+        .map(
+          (n) =>
+            `<li><span class="tag">${escapeHtml(n.category)}</span>` +
+            `<a href="notice-view.html?id=${n.id}">${escapeHtml(n.title)}</a>` +
+            `<time>${fmtDate(n.created_at)}</time></li>`
+        )
+        .join("");
+    }
+    loadNotices();
+  </script>
+  <script src="menu.js"></script>
+</body>
+</html>

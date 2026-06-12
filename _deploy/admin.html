@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex" />
+  <title>공지사항 관리 | 포항 글로벌 기업혁신파크</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="site-header solid">
+    <div class="container nav-wrap">
+      <a class="brand" href="index.html">포항 글로벌 기업혁신파크</a>
+      <nav class="gnb">
+        <ul class="gnb-list">
+          <li><a href="about.html">혁신파크 소개</a></li>
+          <li><a href="notice.html">공지사항</a></li>
+          <li><a href="contact.html">입주 문의</a></li>
+        </ul>
+      </nav>
+      <button type="button" class="nav-toggle" id="nav-toggle" aria-label="메뉴" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </header>
+
+  <section class="page-hero">
+    <div class="container">
+      <p class="breadcrumb"><a href="index.html">홈</a> › 관리자</p>
+      <h1>공지사항 관리</h1>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+
+      <!-- 로그인 화면 -->
+      <div id="login-view" class="admin-card">
+        <h3>관리자 로그인</h3>
+        <div id="login-msg"></div>
+        <div class="form-field">
+          <label for="login-email">이메일</label>
+          <input type="email" id="login-email" autocomplete="username" />
+        </div>
+        <div class="form-field">
+          <label for="login-pw">비밀번호</label>
+          <input type="password" id="login-pw" autocomplete="current-password" />
+        </div>
+        <button type="button" class="btn btn-primary" id="login-btn">로그인</button>
+      </div>
+
+      <!-- 관리 화면 (로그인 후) -->
+      <div id="admin-view" class="hidden">
+        <div class="admin-bar">
+          <span class="muted" id="who"></span>
+          <button type="button" class="btn btn-ghost btn-sm" id="logout-btn">로그아웃</button>
+        </div>
+
+        <div class="admin-card">
+          <h3 id="form-title">새 공지 작성</h3>
+          <div id="form-msg"></div>
+          <input type="hidden" id="edit-id" />
+          <div class="form-field">
+            <label for="f-category">분류</label>
+            <select id="f-category">
+              <option>공지</option>
+              <option>소식</option>
+              <option>공고</option>
+              <option>안내</option>
+              <option>보도</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label for="f-title">제목</label>
+            <input type="text" id="f-title" placeholder="공지 제목을 입력하세요" />
+          </div>
+          <div class="form-field">
+            <label for="f-body">본문</label>
+            <textarea id="f-body" placeholder="공지 내용을 입력하세요"></textarea>
+          </div>
+          <div class="row-actions">
+            <button type="button" class="btn btn-primary" id="save-btn">등록하기</button>
+            <button type="button" class="btn btn-ghost btn-sm hidden" id="cancel-btn">취소</button>
+          </div>
+        </div>
+
+        <h3 class="admin-section-title">등록된 공지</h3>
+        <div id="admin-list">
+          <p class="muted">불러오는 중…</p>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <footer class="site-footer">
+    <div class="container">
+      <p>© 2026 포항 글로벌 기업혁신파크. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-config.js"></script>
+  <script>
+    const $ = (id) => document.getElementById(id);
+
+    function showView(view) {
+      $("login-view").classList.toggle("hidden", view !== "login");
+      $("admin-view").classList.toggle("hidden", view !== "admin");
+    }
+
+    async function refreshSession() {
+      const { data: { session } } = await supa.auth.getSession();
+      if (session) {
+        $("who").textContent = session.user.email + " 님으로 로그인됨";
+        showView("admin");
+        loadAdminList();
+      } else {
+        showView("login");
+      }
+    }
+
+    // 로그인 / 로그아웃
+    $("login-btn").onclick = async () => {
+      $("login-msg").innerHTML = "";
+      const email = $("login-email").value.trim();
+      const password = $("login-pw").value;
+      const { error } = await supa.auth.signInWithPassword({ email, password });
+      if (error) {
+        $("login-msg").innerHTML = '<div class="msg error">로그인 실패: 이메일과 비밀번호를 확인하세요.</div>';
+        return;
+      }
+      refreshSession();
+    };
+    $("logout-btn").onclick = async () => {
+      await supa.auth.signOut();
+      refreshSession();
+    };
+
+    // 목록 불러오기 (수정/삭제 버튼 포함)
+    async function loadAdminList() {
+      const box = $("admin-list");
+      const { data, error } = await supa
+        .from("notices")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (error) {
+        box.innerHTML = '<div class="msg error">목록을 불러오지 못했습니다.</div>';
+        return;
+      }
+      if (!data.length) {
+        box.innerHTML = '<p class="muted">등록된 공지가 없습니다.</p>';
+        return;
+      }
+      box.innerHTML = data
+        .map(
+          (n) =>
+            '<div class="notice-row">' +
+            '<span class="tag">' + escapeHtml(n.category) + "</span>" +
+            '<span class="t">' + escapeHtml(n.title) + "</span>" +
+            "<time>" + fmtDate(n.created_at) + "</time>" +
+            '<span class="row-actions">' +
+            '<button class="btn btn-ghost btn-sm" data-edit="' + n.id + '">수정</button>' +
+            '<button class="btn btn-danger btn-sm" data-del="' + n.id + '">삭제</button>' +
+            "</span></div>"
+        )
+        .join("");
+      box.querySelectorAll("[data-edit]").forEach((b) => {
+        b.onclick = () => startEdit(data.find((x) => x.id == b.dataset.edit));
+      });
+      box.querySelectorAll("[data-del]").forEach((b) => {
+        b.onclick = () => removeNotice(b.dataset.del);
+      });
+    }
+
+    // 수정 모드 시작
+    function startEdit(n) {
+      $("edit-id").value = n.id;
+      $("f-category").value = n.category;
+      $("f-title").value = n.title;
+      $("f-body").value = n.body || "";
+      $("form-title").textContent = "공지 수정";
+      $("save-btn").textContent = "수정 저장";
+      $("cancel-btn").classList.remove("hidden");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+    function resetForm() {
+      $("edit-id").value = "";
+      $("f-category").value = "공지";
+      $("f-title").value = "";
+      $("f-body").value = "";
+      $("form-title").textContent = "새 공지 작성";
+      $("save-btn").textContent = "등록하기";
+      $("cancel-btn").classList.add("hidden");
+    }
+    $("cancel-btn").onclick = () => {
+      resetForm();
+      $("form-msg").innerHTML = "";
+    };
+
+    // 등록 / 수정 저장
+    $("save-btn").onclick = async () => {
+      const id = $("edit-id").value;
+      const payload = {
+        category: $("f-category").value,
+        title: $("f-title").value.trim(),
+        body: $("f-body").value.trim(),
+      };
+      if (!payload.title) {
+        $("form-msg").innerHTML = '<div class="msg error">제목을 입력하세요.</div>';
+        return;
+      }
+      const res = id
+        ? await supa.from("notices").update(payload).eq("id", id)
+        : await supa.from("notices").insert(payload);
+      if (res.error) {
+        $("form-msg").innerHTML = '<div class="msg error">저장 실패: ' + escapeHtml(res.error.message) + "</div>";
+        return;
+      }
+      resetForm();
+      $("form-msg").innerHTML = '<div class="msg ok">저장되었습니다.</div>';
+      loadAdminList();
+    };
+
+    // 삭제
+    async function removeNotice(id) {
+      if (!confirm("이 공지를 정말 삭제할까요?")) return;
+      const { error } = await supa.from("notices").delete().eq("id", id);
+      if (error) {
+        alert("삭제 실패: " + error.message);
+        return;
+      }
+      loadAdminList();
+    }
+
+    refreshSession();
+  </script>
+  <script src="menu.js"></script>
+</body>
+</html>
